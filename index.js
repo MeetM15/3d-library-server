@@ -6,8 +6,14 @@ const app = express();
 app.use(cors());
 app.get("/books", async (req, res, next) => {
   try {
+    const searchTerm = req.query.name;
     const books = await Book.find();
-    res.json(books);
+    const matchingBooks = searchTerm
+      ? books.filter((book) =>
+          book._doc.Name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : books;
+    res.json(matchingBooks);
   } catch (err) {
     next(err);
   }
@@ -24,7 +30,7 @@ app.get("/categories", async (req, res, next) => {
   }
 });
 
-app.get('/books/:category', async (req, res) => {
+app.get("/books/:category", async (req, res) => {
   const { category } = req.params;
 
   try {
@@ -34,7 +40,6 @@ app.get('/books/:category', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
