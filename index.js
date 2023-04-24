@@ -63,7 +63,7 @@ app.get("/payment", async (req, res) => {
   // Generate a client secret for the payment intent
   const clientSecret = paymentIntent.client_secret;
 
-  res.json({ client_secret });
+  res.json({ clientSecret });
 });
 
 app.use((err, req, res, next) => {
