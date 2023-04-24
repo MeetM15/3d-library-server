@@ -2,6 +2,9 @@ const express = require("express");
 const Book = require("./book");
 const db = require("./db");
 const cors = require("cors");
+const stripe = require("stripe")(
+  "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"
+);
 const app = express();
 app.use(cors());
 app.get("/books", async (req, res, next) => {
@@ -39,6 +42,30 @@ app.get("/books/:category", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+app.get("/payment", async (req, res) => {
+  const transformedItem = {
+    price_data: {
+      currency: "inr",
+      product_data: {
+        name: "Basic reading Plan",
+      },
+      unit_amount: 50000,
+    },
+    description:
+      " This plan allows access to all the books in the 3D library for reading purposes",
+    quantity: 1,
+  };
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: [transformedItem],
+    mode: "payment",
+    success_url: `https://virtual-library-fcf41.web.app/`,
+    cancel_url: `https://virtual-library-fcf41.web.app/`,
+    metadata: {},
+  });
+
+  res.json({ id: session.id });
 });
 
 app.use((err, req, res, next) => {
