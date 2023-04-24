@@ -44,26 +44,71 @@ app.get("/books/:category", async (req, res) => {
   }
 });
 app.get("/payment", async (req, res) => {
-  const { customerId } = req.body;
+  const { customerId } = req.query;
 
-  // Create a new customer
-  const customer = await stripe.customers.create({
-    id: customerId,
-  });
+  try {
+    // Try to retrieve the customer with the given ID
+    const customer = await stripe.customers.retrieve(customerId);
 
-  // Create a payment intent for the customer
-  const paymentIntent = await stripe.paymentIntents.create({
-    customer: customer.id,
-    amount: 50000,
-    currency: "inr",
-    description: "Basic reading Plan",
-    payment_method_types: ["card"],
-  });
+    // If the customer exists, create a payment session for the customer
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      customer: customer.id,
+      line_items: [
+        {
+          price_data: {
+            currency: "inr",
+            unit_amount: 50000,
+            product_data: {
+              name: "Basic reading Plan",
+              description:
+                "Allows access to all the books in the 3D library for reading purposes.",
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: "https://virtual-library-fcf41.web.app/",
+      cancel_url: "https://virtual-library-fcf41.web.app/",
+    });
 
-  // Generate a client secret for the payment intent
-  const clientSecret = paymentIntent.client_secret;
+    res.json({ sessionId: session.id });
+  } catch (error) {
+    // If the customer does not exist, create a new customer and then create the payment session
+    if (error.statusCode === 404) {
+      const customer = await stripe.customers.create({
+        id: customerId,
+      });
 
-  res.json({ clientSecret });
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        customer: customer.id,
+        line_items: [
+          {
+            price_data: {
+              currency: "inr",
+              unit_amount: 50000,
+              product_data: {
+                name: "Basic reading Plan",
+                description:
+                  "Allows access to all the books in the 3D library for reading purposes.",
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: "https://virtual-library-fcf41.web.app/",
+        cancel_url: "https://virtual-library-fcf41.web.app/",
+      });
+
+      res.json({ sessionId: session.id });
+    } else {
+      // If an unexpected error occurs, return a 500 error response
+      res.status(500).send("Unexpected error occurred");
+    }
+  }
 });
 
 app.use((err, req, res, next) => {
@@ -73,7 +118,7 @@ app.use((err, req, res, next) => {
 
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 db.once("open", () => {
-  app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server started on port ${process.env.PORT || "3000"}`);
+  app.listen(process.env.PORT || 5000, () => {
+    console.log(`Server started on port ${process.env.PORT || "5000"}`);
   });
 });
