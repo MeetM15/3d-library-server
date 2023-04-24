@@ -3,7 +3,7 @@ const Book = require("./book");
 const db = require("./db");
 const cors = require("cors");
 const stripe = require("stripe")(
-  "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"
+  "sk_test_51KyL4LSGMj0S5MgOS0nI5lNt2gfJgVz00wDfAjzgK06pjHIpfP54C06J7bKWCM5LTKZHN8X0zCAch2b1w45zhAul00rw8TcKzv"
 );
 const app = express();
 app.use(cors());
