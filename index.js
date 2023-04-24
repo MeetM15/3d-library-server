@@ -44,28 +44,26 @@ app.get("/books/:category", async (req, res) => {
   }
 });
 app.get("/payment", async (req, res) => {
-  const transformedItem = {
-    price_data: {
-      currency: "inr",
-      product_data: {
-        name: "Basic reading Plan",
-      },
-      unit_amount: 50000,
-    },
-    description:
-      " This plan allows access to all the books in the 3D library for reading purposes",
-    quantity: 1,
-  };
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items: [transformedItem],
-    mode: "payment",
-    success_url: `https://virtual-library-fcf41.web.app/`,
-    cancel_url: `https://virtual-library-fcf41.web.app/`,
-    metadata: {},
+  const { customerId } = req.body;
+
+  // Create a new customer
+  const customer = await stripe.customers.create({
+    id: customerId,
   });
 
-  res.json({ id: session.id });
+  // Create a payment intent for the customer
+  const paymentIntent = await stripe.paymentIntents.create({
+    customer: customer.id,
+    amount: 50000,
+    currency: "inr",
+    description: "Basic reading Plan",
+    payment_method_types: ["card"],
+  });
+
+  // Generate a client secret for the payment intent
+  const clientSecret = paymentIntent.client_secret;
+
+  res.json({ client_secret });
 });
 
 app.use((err, req, res, next) => {
